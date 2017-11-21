@@ -134,6 +134,12 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/lileio/pubsub"
+  packages = [".","google"]
+  revision = "33d65e4d46b0f0211092a544b39de93911e87501"
+
+[[projects]]
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
@@ -334,6 +340,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1aee0ca10f27436fc20aa4105d448b036c5239373d0a4a40088f5940811f2e1f"
+  inputs-digest = "1159147db40787df365f732f173a0890671d1aaeb19eaa0a0033a070cd3712c5"
   solver-name = "gps-cdcl"
   solver-version = 1
