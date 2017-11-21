@@ -12,7 +12,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/lileio/lile/fromenv"
-	"github.com/lileio/lile/pubsub"
+	"github.com/lileio/pubsub"
 	"github.com/prometheus/client_golang/prometheus"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
@@ -110,25 +110,7 @@ func CreateServer() *grpc.Server {
 	return gs
 }
 
-var clientSet = false
-
-func setPubSubClient() {
-	if !clientSet {
-		pubsub.SetClient(&pubsub.Client{
-			ServiceName: service.Name,
-			Provider:    fromenv.PubSubProvider(),
-		})
-		clientSet = true
-	}
-}
-
-func Subscribe(s pubsub.Subscriber) {
-	setPubSubClient()
-	pubsub.Subscribe(s)
-}
-
 func AddPubSubInterceptor(methodMap map[string]string) {
-	setPubSubClient()
 	AddUnaryInterceptor(pubsub.UnaryServerInterceptor(
 		pubsub.GlobalClient(),
 		methodMap,
