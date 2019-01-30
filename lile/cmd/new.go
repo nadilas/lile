@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/fatih/color"
@@ -17,17 +19,34 @@ var newCmd = &cobra.Command{
 	Run:   new,
 }
 
-var templatePath = os.Getenv("GOPATH") + "/src/github.com/lileio/lile/template"
+var (
+	gopath       string
+	templatePath string
+)
 
 var out = colorable.NewColorableStdout()
 
 func init() {
+	gopath = os.Getenv("GOPATH")
+	if gopath == "" {
+		b, err := exec.Command("go", "env", "GOPATH").CombinedOutput()
+		if err != nil {
+			panic(string(b))
+		}
+		gopath = strings.TrimSpace(string(b))
+	}
+
+	if paths := filepath.SplitList(gopath); len(paths) > 0 {
+		gopath = paths[0]
+	}
+
+	templatePath = filepath.Clean(filepath.Join(gopath, "/src/github.com/lileio/lile/template"))
 	RootCmd.AddCommand(newCmd)
 }
 
 func new(cmd *cobra.Command, args []string) {
 	if len(args) != 1 {
-		fmt.Printf("You must supply a path for the service, e.g lile new lile/user_service\n")
+		fmt.Printf("You must supply a path for the service, e.g lile new lile/users\n")
 		return
 	}
 
@@ -70,6 +89,6 @@ func er(err error) {
 			color.RedString("[ERROR]"),
 			err.Error(),
 		)
-		os.Exit(-1)
+		panic(err)
 	}
 }

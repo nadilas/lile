@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -19,13 +20,13 @@ import (
 	"github.com/xtgo/set"
 
 	"github.com/fatih/color"
-	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
 var (
-	templatePath = os.Getenv("GOPATH") + "/src/github.com/lileio/lile/protoc-gen-lile-server/templates"
+	gopath       string
+	templatePath string
 
 	input  io.Reader
 	output io.Writer
@@ -53,6 +54,21 @@ type goimport struct {
 	Package   string
 	GoPackage string
 	GoType    string
+}
+
+func init() {
+	gopath = os.Getenv("GOPATH")
+	if gopath == "" {
+		b, err := exec.Command("go", "env", "GOPATH").CombinedOutput()
+		if err != nil {
+			panic(string(b))
+		}
+		gopath = strings.TrimSpace(string(b))
+	}
+	if paths := filepath.SplitList(gopath); len(paths) > 0 {
+		gopath = paths[0]
+	}
+	templatePath = filepath.Clean(filepath.Join(gopath, "/src/github.com/lileio/lile/protoc-gen-lile-server/templates"))
 }
 
 func main() {
@@ -153,7 +169,9 @@ func toGoType(imports []goimport, t string) string {
 	t = strings.Trim(t, ".")
 	for _, i := range imports {
 		if strings.Contains(t, i.Package) {
-			return strings.Replace(t, i.Package, i.GoType, 1)
+			s := strings.Replace(t, i.Package, i.GoType, 1)
+			s = strings.Replace(s, "-", "_", -1)
+			return s
 		}
 	}
 
@@ -237,11 +255,14 @@ func render(path, tmpl string, m grpcMethod) (*plugin.CodeGeneratorResponse_File
 	var out bytes.Buffer
 	err = t.Execute(&out, m)
 	if err != nil {
+		log.Printf("%s couldn't create template %s, %s", color.RedString("[ERROR]"), tmpl, err)
 		return nil, err
 	}
 
 	b, err := format.Source(out.Bytes())
 	if err != nil {
+		log.Printf(string(out.Bytes()))
+		log.Printf("\n%s couldn't format Go file %s, %s", color.RedString("[ERROR]"), tmpl, err)
 		return nil, err
 	}
 
@@ -280,9 +301,9 @@ func emitError(err error) {
 func emitResp(resp *plugin.CodeGeneratorResponse) {
 	buf, err := proto.Marshal(resp)
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 	}
 	if _, err := output.Write(buf); err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 	}
 }
